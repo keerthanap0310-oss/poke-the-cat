@@ -1,0 +1,295 @@
+<title>Keerthana Cat</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;800&display=swap">
+<style>
+  :root {
+    --bg: #b2dbc6;
+    --ink: #3a1f1a;
+    --bubble: #fffaf0;
+    --accent: #e8964a;
+    --muted: #4f6e5f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #1f3a2e; --ink: #fbe9d7; --bubble: #fffaf0; --muted: #9fc4b1; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg: #1f3a2e; --ink: #fbe9d7; --bubble: #fffaf0; --muted: #9fc4b1; color-scheme: dark; }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Baloo 2", "Comic Sans MS", system-ui, sans-serif;
+    padding: 16px;
+    box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  h1 { margin: 8px 0 0; font-weight: 800; font-size: clamp(28px, 6vw, 48px); text-wrap: balance; text-align: center; }
+  .hint { margin: 0; color: var(--muted); font-size: 16px; text-align: center; }
+  .count { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--accent); }
+
+  .stage { position: relative; width: min(900px, 100%); max-width: 100%; user-select: none; }
+  .stage img {
+    display: block; width: 100%; border-radius: 24px;
+    transition: transform .15s ease;
+    -webkit-user-drag: none;
+  }
+  .stage.wiggle img { animation: wiggle .45s ease; }
+  @keyframes wiggle {
+    0%,100% { transform: rotate(0) scale(1); }
+    25% { transform: rotate(-2deg) scale(1.02); }
+    50% { transform: rotate(2deg) scale(1.03); }
+    75% { transform: rotate(-1deg) scale(1.01); }
+  }
+
+  .spot {
+    position: absolute; transform: translate(-50%, -50%);
+    border-radius: 50%; border: 0; background: transparent; cursor: pointer; padding: 0;
+  }
+  .spot:hover, .spot:focus-visible { background: rgba(255,255,255,.18); outline: 3px dashed rgba(255,255,255,.7); }
+
+  .bubble {
+    position: absolute; transform: translate(-50%, -100%);
+    background: var(--bubble); color: #3a1f1a;
+    border: 3px solid #3a1f1a; border-radius: 18px;
+    padding: 4px 14px; font-weight: 800; font-size: clamp(14px, 2.6vw, 24px);
+    white-space: nowrap; pointer-events: none;
+    animation: pop 1.3s ease forwards;
+  }
+  @keyframes pop {
+    0% { opacity: 0; transform: translate(-50%, -60%) scale(.5); }
+    15% { opacity: 1; transform: translate(-50%, -110%) scale(1.1); }
+    30% { transform: translate(-50%, -110%) scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -160%) scale(1); }
+  }
+  /* trim the screenshot's scrollbar strip on the right edge */
+  .stage img { clip-path: inset(0 1.7% 0 0 round 24px); }
+
+  .particle {
+    position: absolute; pointer-events: none; font-size: clamp(18px, 3vw, 30px);
+    transform: translate(-50%, -50%);
+    animation: fly 1s ease-out forwards;
+  }
+  @keyframes fly {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(.6); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2) rotate(var(--rot)); }
+  }
+
+  .combo {
+    position: absolute; right: 4%; top: 6%;
+    font-weight: 800; font-size: clamp(20px, 4vw, 40px); color: var(--accent);
+    -webkit-text-stroke: 2px #3a1f1a; paint-order: stroke fill;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .combo.on { opacity: 1; animation: thump .25s ease; }
+  @keyframes thump { 50% { transform: scale(1.3); } }
+
+  .stage.zoomies img { animation: zoomies .6s linear; }
+  @keyframes zoomies {
+    0%,100% { transform: none; }
+    10%,30%,50%,70%,90% { transform: translateX(-3%) rotate(-4deg); }
+    20%,40%,60%,80% { transform: translateX(3%) rotate(4deg); }
+  }
+
+  .zzz {
+    position: absolute; left: 62%; top: 12%; pointer-events: none;
+    font-weight: 800; font-size: clamp(20px, 4vw, 40px); color: var(--bubble);
+    -webkit-text-stroke: 2px #3a1f1a; paint-order: stroke fill;
+    opacity: 0; transition: opacity .4s;
+  }
+  .stage.sleeping .zzz { opacity: 1; animation: drift 2s ease-in-out infinite; }
+  .stage.sleeping img { animation: breathe 3s ease-in-out infinite; filter: brightness(.85); }
+  @keyframes drift { 50% { transform: translate(10px, -12px); } }
+  @keyframes breathe { 50% { transform: scale(1.015); } }
+
+  .toast {
+    position: fixed; left: 50%; top: 24px; transform: translateX(-50%);
+    background: var(--bubble); color: #3a1f1a; border: 3px solid #3a1f1a; border-radius: 18px;
+    padding: 8px 18px; font-weight: 800; font-size: 20px; text-align: center;
+    animation: toast 2.4s ease forwards; z-index: 10; max-width: calc(100% - 32px);
+  }
+  @keyframes toast {
+    0% { opacity: 0; transform: translate(-50%, -20px); }
+    10%, 85% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -20px); }
+  }
+
+  .rank { color: var(--muted); font-weight: 800; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage.wiggle img, .stage.zoomies img, .bubble, .particle, .combo.on,
+    .stage.sleeping img, .stage.sleeping .zzz { animation: none; }
+  }
+</style>
+
+<h1>Poke the cool cat</h1>
+<p class="hint">Tap its nose, paws, ears, belly or tail · Pokes: <span class="count" id="count">0</span> · <span class="rank" id="rank">New friend</span></p>
+
+<div class="stage" id="stage">
+  <img src="cat.png" alt="Orange tabby cat in sunglasses lounging on cushions" id="cat">
+  <!-- positions are % of the image -->
+  <button class="spot" data-part="nose"  style="left:46.3%;top:36%;width:7%;aspect-ratio:1" aria-label="Boop the nose"></button>
+  <button class="spot" data-part="paw"   style="left:31.5%;top:86%;width:11%;aspect-ratio:1" aria-label="Tickle the front paw"></button>
+  <button class="spot" data-part="foot"  style="left:71.5%;top:52%;width:9%;aspect-ratio:1" aria-label="Tickle the raised foot"></button>
+  <button class="spot" data-part="ear"   style="left:38.7%;top:19%;width:6%;aspect-ratio:1" aria-label="Touch the left ear"></button>
+  <button class="spot" data-part="ear"   style="left:58%;top:26%;width:6%;aspect-ratio:1" aria-label="Touch the right ear"></button>
+  <button class="spot" data-part="belly" style="left:52%;top:68%;width:14%;aspect-ratio:1" aria-label="Rub the belly"></button>
+  <button class="spot" data-part="tail"  style="left:66%;top:92%;width:10%;aspect-ratio:1" aria-label="Pull the tail"></button>
+  <div class="combo" id="combo" aria-live="polite"></div>
+  <div class="zzz" aria-hidden="true">Z z z</div>
+</div>
+
+<script>
+  const lines = {
+    nose:  { text: "Keerthanyaa!", pitch: 1.3, rate: 1.0 },
+    paw:   { text: "Meow, Keerthana!", pitch: 1.1, rate: 1.0 },
+    foot:  { text: "Keer-tha-naaa!", pitch: 1.4, rate: 0.9 },
+    ear:   { text: "Keerthana?", pitch: 1.0, rate: 1.0 },
+    belly: { text: "Purr, Keerthana!", pitch: 1.2, rate: 1.0 },
+    tail:  { text: "Hiss! Keerthana!", pitch: 0.8, rate: 1.1 },
+    any:   { text: "Keerthana!", pitch: 1.2, rate: 1.0 },
+    wake:  { text: "Who woke me? Keerthana!", pitch: 1.1, rate: 1.1 },
+    zoom:  { text: "Keerthana zoomies!", pitch: 1.6, rate: 1.3 },
+  };
+  const emojis = { nose: "💖", paw: "🐾", foot: "🐾", ear: "✨", belly: "😹", tail: "⚡", any: "💖" };
+  const ranks = [[10, "Cat petter"], [25, "Cat whisperer"], [50, "Keerthana superfan"], [100, "Legendary cat boss 👑"]];
+  const stage = document.getElementById("stage");
+  const countEl = document.getElementById("count");
+  let count = 0;
+
+  function speak({ text, pitch, rate }) {
+    if (!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    // silly cat: the macOS "Jester" voice, or a high, bouncy normal voice elsewhere
+    const voices = speechSynthesis.getVoices();
+    const jester = voices.find(v => v.name === "Jester" || v.name.startsWith("Jester "));
+    const v = jester || voices.find(v => /en-IN/i.test(v.lang)) || voices.find(v => /^en/i.test(v.lang));
+    if (v) u.voice = v;
+    u.pitch = jester ? pitch : Math.min(2, pitch * 1.5);
+    u.rate = jester ? rate : rate * 1.1;
+    speechSynthesis.speak(u);
+  }
+
+  function bubble(x, y, text) {
+    const b = document.createElement("div");
+    b.className = "bubble";
+    b.textContent = text;
+    b.style.left = x + "px"; b.style.top = y + "px";
+    stage.appendChild(b);
+    b.addEventListener("animationend", () => b.remove());
+    setTimeout(() => b.remove(), 2000);
+  }
+
+  // a tiny synthesized "mrrp" so there's sound even without speech voices
+  let audio;
+  function meow(pitch = 1) {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audio.currentTime, o = audio.createOscillator(), f = audio.createBiquadFilter(), g = audio.createGain();
+      o.type = "sawtooth"; f.type = "lowpass"; f.frequency.value = 1800;
+      o.frequency.setValueAtTime(500 * pitch, t);
+      o.frequency.linearRampToValueAtTime(900 * pitch, t + .12);
+      o.frequency.linearRampToValueAtTime(450 * pitch, t + .35);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.15, t + .03); g.gain.exponentialRampToValueAtTime(.001, t + .4);
+      o.connect(f).connect(g).connect(audio.destination); o.start(t); o.stop(t + .42);
+    } catch {}
+  }
+
+  // soft purr rumble under the voice: low-passed noise pulsing ~25 times a second
+  function purr(seconds = 1.4) {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audio.currentTime, len = Math.floor(audio.sampleRate * seconds);
+      const buf = audio.createBuffer(1, len, audio.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+      const lfo = audio.createOscillator(), depth = audio.createGain();
+      src.buffer = buf; f.type = "lowpass"; f.frequency.value = 220;
+      lfo.frequency.value = 25; depth.gain.value = .25; lfo.connect(depth).connect(g.gain);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.3, t + .2); g.gain.linearRampToValueAtTime(0, t + seconds);
+      src.connect(f).connect(g).connect(audio.destination);
+      src.start(t); lfo.start(t); src.stop(t + seconds); lfo.stop(t + seconds);
+    } catch {}
+  }
+
+  function burst(x, y, emoji, n = 6, spread = 90) {
+    for (let i = 0; i < n; i++) {
+      const p = document.createElement("div");
+      p.className = "particle"; p.textContent = emoji;
+      const a = Math.random() * Math.PI * 2, d = spread * (.5 + Math.random());
+      p.style.left = x + "px"; p.style.top = y + "px";
+      p.style.setProperty("--dx", Math.cos(a) * d + "px");
+      p.style.setProperty("--dy", Math.sin(a) * d - 30 + "px");
+      p.style.setProperty("--rot", (Math.random() * 120 - 60) + "deg");
+      stage.appendChild(p);
+      setTimeout(() => p.remove(), 1100);
+    }
+  }
+
+  function toast(text) {
+    const t = document.createElement("div");
+    t.className = "toast"; t.textContent = text; t.setAttribute("role", "status");
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function shake(cls) { stage.classList.remove("wiggle", "zoomies"); void stage.offsetWidth; stage.classList.add(cls); }
+
+  // combo: quick pokes in a row
+  const comboEl = document.getElementById("combo");
+  let combo = 0, lastPoke = 0, comboTimer;
+  function bumpCombo() {
+    const now = Date.now();
+    combo = now - lastPoke < 700 ? combo + 1 : 1;
+    lastPoke = now;
+    clearTimeout(comboTimer);
+    comboTimer = setTimeout(() => { combo = 0; comboEl.classList.remove("on"); }, 900);
+    if (combo >= 3) {
+      comboEl.textContent = "COMBO x" + combo;
+      comboEl.classList.remove("on"); void comboEl.offsetWidth; comboEl.classList.add("on");
+    }
+    return combo;
+  }
+
+  // nap after a while with no pokes
+  let napTimer;
+  function resetNap() { clearTimeout(napTimer); napTimer = setTimeout(() => stage.classList.add("sleeping"), 12000); }
+
+  function poke(part, e) {
+    const wasAsleep = stage.classList.contains("sleeping");
+    stage.classList.remove("sleeping"); resetNap();
+    const c = bumpCombo();
+    const key = wasAsleep ? "wake" : c > 0 && c % 8 === 0 ? "zoom" : part;
+    const line = lines[key] || lines.any;
+    meow(line.pitch / 1.2); purr();
+    setTimeout(() => speak(line), 250);
+    const r = stage.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    bubble(x, y, line.text);
+    burst(x, y, emojis[part] || "💖", key === "zoom" ? 16 : 6, key === "zoom" ? 200 : 90);
+    shake(key === "zoom" ? "zoomies" : "wiggle");
+    countEl.textContent = ++count;
+    const hit = ranks.find(([n]) => n === count);
+    if (hit) {
+      document.getElementById("rank").textContent = hit[1];
+      toast("🎉 " + count + " pokes! You're now: " + hit[1]);
+      burst(r.width / 2, r.height / 2, "🎉", 24, 300);
+    }
+  }
+
+  stage.addEventListener("click", e => {
+    const spot = e.target.closest(".spot");
+    if (spot) { poke(spot.dataset.part, e); return; }
+    poke("any", e);
+  });
+  // keyboard activation gives clientX/Y of 0, so place the bubble on the spot instead
+  stage.querySelectorAll(".spot").forEach(s => s.addEventListener("keydown", e => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    const sr = s.getBoundingClientRect();
+    poke(s.dataset.part, { clientX: sr.left + sr.width / 2, clientY: sr.top });
+  }));
+  if ("speechSynthesis" in window) speechSynthesis.getVoices();
+  resetNap();
+
+</script>
